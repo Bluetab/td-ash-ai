@@ -183,9 +183,13 @@ defmodule AshAi.Actions.Prompt do
     json_schema = get_json_schema(input)
     {adapter, adapter_opts} = get_adapter(opts, llm)
 
-    tools = get_tools(opts, input, context)
+    tools =
+      get_tools(opts, input, context)
+      |> maybe_drop_additional_properties_for_google_ai(llm)
 
     messages = get_messages(input, opts, context)
+
+    modify_chain = opts[:modify_chain] || fn chain, _context -> chain end
 
     data = %AshAi.Actions.Prompt.Adapter.Data{
       llm: llm,
@@ -194,7 +198,8 @@ defmodule AshAi.Actions.Prompt do
       json_schema: json_schema,
       tools: tools,
       verbose?: opts[:verbose?] || false,
-      context: context
+      context: context,
+      modify_chain: modify_chain
     }
 
     adapter.run(data, adapter_opts)
@@ -233,6 +238,19 @@ defmodule AshAi.Actions.Prompt do
         )
     end
   end
+
+  defp maybe_drop_additional_properties_for_google_ai(
+         tools,
+         %LangChain.ChatModels.ChatGoogleAI{}
+       ) do
+    Enum.map(tools, fn tool ->
+      Map.update!(tool, :parameters_schema, fn schema ->
+        Map.drop(schema, ["additionalProperties"])
+      end)
+    end)
+  end
+
+  defp maybe_drop_additional_properties_for_google_ai(tools, _llm), do: tools
 
   defp get_llm(opts, input, context) do
     case opts[:llm] do

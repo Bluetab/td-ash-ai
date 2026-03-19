@@ -43,7 +43,8 @@ defmodule AshAi.Actions.Prompt.Adapter do
       :verbose?,
       :json_schema,
       :tools,
-      :context
+      :context,
+      :modify_chain
     ]
 
     @type t :: %__MODULE__{
@@ -53,7 +54,8 @@ defmodule AshAi.Actions.Prompt.Adapter do
             json_schema: map(),
             tools: list(),
             verbose?: boolean(),
-            context: Ash.Resource.Actions.Implementation.Context.t()
+            context: Ash.Resource.Actions.Implementation.Context.t(),
+            modify_chain: (LangChain.Chains.LLMChain.t(), term() -> LangChain.Chains.LLMChain.t())
           }
   end
 
